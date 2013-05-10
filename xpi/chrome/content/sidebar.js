@@ -192,6 +192,15 @@ function onResultDoubleClick () {
 
       var ios = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
       var cookieUri = ios.newURI(result.siteUrl, null, null);
+      var rootURI;
+      if (result.handler.copyCookieToRootDomain) {
+        var tmpArr = cookieUri.host.split('.').reverse();
+        var rootUrl = "http://" + tmpArr[1] + '.' + tmpArr[0];
+        rootURI = ios.newURI(rootUrl, null, null);
+        if (rootURI.host != cookieUri.host) {
+          deleteDomainCookies(rootURI);
+        }
+      }
 
       deleteDomainCookies(cookieUri);
   
@@ -200,6 +209,10 @@ function onResultDoubleClick () {
         var cookieValue = result.firstPacket.cookies[cookieName];
         var cookieString = cookieName + '=' + cookieValue + ';domain=.' + cookieUri.host;
         cookieSvc.setCookieString(cookieUri, null, cookieString, null);
+        if (rootURI && (rootURI.host != cookieUri.host)) {
+          var rootCookieString = cookieName + '=' + cookieValue + ';domain=.' + rootURI.host;
+          cookieSvc.setCookieString(rootURI, null, rootCookieString, null);
+        }
       }
       
       mainWindow.gBrowser.selectedTab = mainWindow.gBrowser.addTab(result.siteUrl);
